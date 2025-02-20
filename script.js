@@ -111,9 +111,40 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
-        // **Buscar imágenes en Wikimedia Commons**
-        const wikiUrl = `https://commons.wikimedia.org/w/api.php?action=query&format=json&origin=*&generator=images&titles=${encodeURIComponent(poblacion)}&gimlimit=5&prop=imageinfo&iiprop=url`;
+        // **API Keys**
+        const openCageAPIKey = "669261be4a3945acb862fda1a7104da6";
+        const geoNamesAPIKey = "didacsoler111"; // Tu nombre de usuario en GeoNames
+
         try {
+            // **1️⃣ Obtener coordenadas de la población con OpenCage**
+            const geoUrl = `https://api.opencagedata.com/geocode/v1/json?q=${encodeURIComponent(poblacion)},España&key=${openCageAPIKey}`;
+            const geoResponse = await fetch(geoUrl);
+            const geoData = await geoResponse.json();
+
+            if (!geoData.results || geoData.results.length === 0) {
+                nearbyCitiesContainer.innerHTML = `<h3>No se encontraron coordenadas para ${poblacion}.</h3>`;
+                return;
+            }
+
+            const { lat, lng } = geoData.results[0].geometry;
+            console.log(`Coordenadas de ${poblacion}: Lat ${lat}, Lng ${lng}`);
+
+            // **2️⃣ Buscar ciudades cercanas en GeoNames**
+            const geoNamesUrl = `https://secure.geonames.org/findNearbyPlaceNameJSON?lat=${lat}&lng=${lng}&radius=30&maxRows=5&username=${geoNamesAPIKey}`;
+            const nearbyResponse = await fetch(geoNamesUrl);
+            const nearbyData = await nearbyResponse.json();
+
+            if (nearbyData.geonames && nearbyData.geonames.length > 0) {
+                nearbyCitiesContainer.innerHTML = `<h3>Ciudades cercanas a ${poblacion}:</h3>`;
+                nearbyData.geonames.forEach(city => {
+                    nearbyCitiesContainer.innerHTML += `<p>${city.name} (${city.countryName})</p>`;
+                });
+            } else {
+                nearbyCitiesContainer.innerHTML = `<h3>No se encontraron ciudades cercanas.</h3>`;
+            }
+
+            // **3️⃣ Obtener imágenes de Wikimedia Commons**
+            const wikiUrl = `https://commons.wikimedia.org/w/api.php?action=query&format=json&origin=*&generator=images&titles=${encodeURIComponent(poblacion)}&gimlimit=5&prop=imageinfo&iiprop=url`;
             const wikiResponse = await fetch(wikiUrl);
             const wikiData = await wikiResponse.json();
 
@@ -139,27 +170,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             }
         } catch (error) {
-            console.error("Error obteniendo imágenes:", error);
-        }
-
-        // **Buscar ciudades cercanas con GeoNames**
-        const geoNamesAPIKey = "didacsoler111";
-
-        try {
-            const geoUrl = `https://secure.geonames.org/findNearbyPlaceNameJSON?lat=41.3828939&lng=2.1774322&radius=30&maxRows=5&username=${geoNamesAPIKey}`;
-            const nearbyResponse = await fetch(geoUrl);
-            const nearbyData = await nearbyResponse.json();
-
-            if (nearbyData.geonames && nearbyData.geonames.length > 0) {
-                nearbyCitiesContainer.innerHTML = `<h3>Ciudades cercanas a ${poblacion}:</h3>`;
-                nearbyData.geonames.forEach(city => {
-                    nearbyCitiesContainer.innerHTML += `<p>${city.name} (${city.countryName})</p>`;
-                });
-            } else {
-                nearbyCitiesContainer.innerHTML = `<h3>No se encontraron ciudades cercanas.</h3>`;
-            }
-        } catch (error) {
-            console.error("Error obteniendo ciudades cercanas:", error);
+            console.error("Error obteniendo datos:", error);
         }
     });
 });
