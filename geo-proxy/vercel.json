@@ -1,0 +1,10 @@
+{
+    "version": 2,
+    "routes": [
+      {
+        "src": "/geonames/(.*)",
+        "dest": "http://api.geonames.org/$1"
+      }
+    ]
+  }
+  
